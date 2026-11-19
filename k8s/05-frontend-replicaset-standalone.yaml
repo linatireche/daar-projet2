@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: daar-frontend-replicaset
+  namespace: daar-library
+  labels:
+    app: daar-frontend-rs
+    tier: ui
+spec:
+  # ReplicaSet dédié Frontend (2 répliques)
+  replicas: 2
+  selector:
+    matchLabels:
+      app: daar-frontend-rs
+  template:
+    metadata:
+      labels:
+        app: daar-frontend-rs
+        tier: ui
+    spec:
+      containers:
+        - name: frontend
+          image: projet2daar-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"

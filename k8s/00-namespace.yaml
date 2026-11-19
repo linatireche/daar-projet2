@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: daar-library
+  labels:
+    app.kubernetes.io/name: daar-library
+    app.kubernetes.io/part-of: sorbonne-universite

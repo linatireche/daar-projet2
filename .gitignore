@@ -1,0 +1,33 @@
+# Python & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Environnement local & données persistantes
+.env
+.venv
+env/
+venv/
+data/
+*.db
+*.sqlite3
+
+# Node & Frontend dist
+node_modules/
+dist/
+.npm
+npm-debug.log*
+
+# Fichiers temporaires système & IDE
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Fichiers internes et wrappers locaux (non visibles sur GitHub)
+powershell.bat
+powershell.cmd
+
+# Dossier personnel de documentation locale (non envoyé au prof sur GitHub)
+doc/

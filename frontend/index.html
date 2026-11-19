@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bibliothèque Sorbonne Université | DAAR Recherche</title>
+    <!-- Fonts Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,400&display=swap" rel="stylesheet">
+    <!-- Tailwind CSS CDN avec configuration personnalisée -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              serif: ['"Playfair Display"', 'Georgia', 'serif'],
+              cinzel: ['Cinzel', 'serif'],
+            },
+            colors: {
+              sorbonne: {
+                navy: '#0b1d3a',
+                royal: '#1e3a8a',
+                gold: '#d4af37',
+              },
+              rose: {
+                50: '#fff1f2',
+                100: '#ffe4e6',
+                200: '#fecdd3',
+                300: '#fda4af',
+                400: '#fb7185',
+                500: '#f43f5e',
+                600: '#e11d48',
+                700: '#be123c',
+                800: '#9f1239',
+                900: '#881337',
+                dusty: '#d97793',
+                soft: '#fdf2f4',
+              },
+              parchment: {
+                50: '#fdfbf7',
+                100: '#f7f4ed',
+                200: '#ede8dc',
+                300: '#ded7c4',
+              }
+            }
+          }
+        }
+      }
+    </script>
+  </head>
+  <body class="bg-parchment-50 text-slate-800 antialiased selection:bg-rose-200 selection:text-rose-900 min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

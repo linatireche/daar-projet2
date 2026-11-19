@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: daar-backend-deployment
+  namespace: daar-library
+  labels:
+    app: daar-backend
+    tier: api
+spec:
+  # Utilisation explicite de 3 répliques gérées par le ReplicaSet sous-jacent
+  replicas: 3
+  selector:
+    matchLabels:
+      app: daar-backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: daar-backend
+        tier: api
+    spec:
+      containers:
+        - name: backend
+          image: projet2daar-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: daar-config
+            - secretRef:
+                name: daar-secrets
+          volumeMounts:
+            - name: books-storage
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: books-storage
+          persistentVolumeClaim:
+            claimName: books-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: daar-library
+  labels:
+    app: daar-backend
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+  selector:
+    app: daar-backend

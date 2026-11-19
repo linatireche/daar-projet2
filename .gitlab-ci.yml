@@ -1,0 +1,47 @@
+stages:
+  - test
+  - build
+  - docker
+  - kubernetes
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+
+test-algorithms:
+  stage: test
+  image: python:3.11-slim
+  script:
+    - cd backend
+    - apt-get update && apt-get install -y gcc libpq-dev
+    - pip install -r requirements.txt
+    - pytest tests/ -v
+
+build-frontend:
+  stage: build
+  image: node:20-alpine
+  script:
+    - cd frontend
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/dist/
+    expire_in: 1 week
+
+docker-build:
+  stage: docker
+  image: docker:24-dind
+  services:
+    - docker:24-dind
+  script:
+    - docker build -t projet2daar-backend:latest ./backend
+    - docker build -t projet2daar-frontend:latest ./frontend
+
+k8s-validate:
+  stage: kubernetes
+  image: bitnami/kubectl:latest
+  script:
+    - kubectl apply --dry-run=client -k k8s/
+    - kubectl apply --dry-run=client -f k8s/04-backend-replicaset-standalone.yaml
+    - kubectl apply --dry-run=client -f k8s/05-frontend-replicaset-standalone.yaml

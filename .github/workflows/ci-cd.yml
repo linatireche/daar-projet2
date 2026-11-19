@@ -1,0 +1,108 @@
+name: DAAR Library Search CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test-backend:
+    name: 🐍 Tests Algorithmes & Backend (KMP, Jaccard, PageRank)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Algorithm Unit Tests with Pytest
+        working-directory: ./backend
+        run: |
+          pytest tests/ -v --tb=short
+
+  build-frontend:
+    name: ⚛️ Build & Verification Frontend (React / Vite)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: ./frontend/package.json
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: Build Vite SPA
+        working-directory: ./frontend
+        run: npm run build
+
+  docker-build:
+    name: 🐳 Construction des Images Docker
+    needs: [test-backend, build-frontend]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: false
+          tags: projet2daar-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: false
+          tags: projet2daar-frontend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  k8s-validate:
+    name: ☸️ Validation des Manifestes Kubernetes & ReplicaSets
+    needs: [docker-build]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'latest'
+
+      - name: Dry-run Validation Kustomize & ReplicaSets
+        run: |
+          echo "Validation des manifestes k8s (Deployment, ReplicaSet, Services, Ingress)..."
+          kubectl apply --dry-run=client -k k8s/
+          kubectl apply --dry-run=client -f k8s/04-backend-replicaset-standalone.yaml
+          kubectl apply --dry-run=client -f k8s/05-frontend-replicaset-standalone.yaml
+          echo "Tous les ReplicaSets et Deployments sont valides !"

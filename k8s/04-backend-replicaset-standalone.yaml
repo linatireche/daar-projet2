@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: daar-backend-replicaset
+  namespace: daar-library
+  labels:
+    app: daar-backend-rs
+    tier: api
+spec:
+  # Spécification explicite du ReplicaSet selon les exigences du projet
+  replicas: 3
+  selector:
+    matchLabels:
+      app: daar-backend-rs
+  template:
+    metadata:
+      labels:
+        app: daar-backend-rs
+        tier: api
+    spec:
+      containers:
+        - name: backend
+          image: projet2daar-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: daar-config
+            - secretRef:
+                name: daar-secrets
+          volumeMounts:
+            - name: books-storage
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "250m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+      volumes:
+        - name: books-storage
+          persistentVolumeClaim:
+            claimName: books-pvc

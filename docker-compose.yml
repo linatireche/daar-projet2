@@ -1,0 +1,65 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: daar-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: daar_user
+      POSTGRES_PASSWORD: daar_password
+      POSTGRES_DB: daar_library
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - daar-network
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U daar_user -d daar_library"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: daar-backend
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://daar_user:daar_password@db:5432/daar_library
+      - DATA_DIR=/app/data
+      - TARGET_BOOK_COUNT=1665
+      - MIN_WORD_COUNT=10000
+    volumes:
+      - books_data:/app/data
+    networks:
+      - daar-network
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: daar-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "3000:80"
+    networks:
+      - daar-network
+    depends_on:
+      - backend
+
+networks:
+  daar-network:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local
+  books_data:
+    driver: local
