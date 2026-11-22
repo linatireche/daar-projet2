@@ -30,7 +30,7 @@ jobs:
       - name: Run Algorithm Unit Tests with Pytest
         working-directory: ./backend
         run: |
-          pytest tests/ -v --tb=short
+          python -m pytest tests/ -v --tb=short
 
   build-frontend:
     name: ⚛️ Build & Verification Frontend (React / Vite)
