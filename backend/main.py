@@ -48,6 +48,14 @@ app.include_router(books.router, prefix="/api")
 app.include_router(graph.router, prefix="/api")
 app.include_router(stats.router, prefix="/api")
 
+# Support du déploiement tout-en-un (Render / Cloud)
+import os
+from fastapi.staticfiles import StaticFiles
+
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.isdir(static_dir):
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+
 
 @app.get("/")
 def root():
