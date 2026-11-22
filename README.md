@@ -26,7 +26,6 @@
 6. [Orchestration Kubernetes & ReplicaSets](#-orchestration-kubernetes--replicasets)
 7. [Intégration Continue (CI/CD)](#-intégration-continue-cicd)
 8. [Résultats des Benchmarks](#-résultats-des-benchmarks)
-9. [Documentation & Présentation](#-documentation--présentation)
 
 ---
 
@@ -183,16 +182,6 @@ Mesures expérimentales réelles obtenues sur notre corpus de 1 665 livres :
 | **Index Inversé (TF-IDF)** | $O(1)$ lookup | **~6 ms** | Classement instantané par pertinence |
 | **Expressions Régulières** | Linéaire sur index | **~8 ms** | Flexibilité des motifs (wildcards, regex) |
 | **Knuth-Morris-Pratt (KMP)** | $O(N + M)$ | **~26 ms** | Recherche exacte absolue dans le texte brut |
-
----
-
-## 📁 Documentation & Présentation
-
-- 📄 **Rapport Académique LaTeX :** [`rapport.tex`](rapport.tex) (prêt pour compilation Overleaf, 100% noir et blanc).
-- 🎬 **Script Vidéo de Soutenance (8 min) :** [`doc/SCRIPT_VIDEO_SOUTENANCE_8MIN.md`](doc/SCRIPT_VIDEO_SOUTENANCE_8MIN.md) (actions à faire & paroles mot à mot).
-- 📊 **Support de Présentation :**
-  - PowerPoint officiel : [`presentation_soutenance.pptx`](presentation_soutenance.pptx)
-  - Présentation Web plein écran : [`presentation.html`](presentation.html) (appuyer sur `F11`).
 
 ---
 
