@@ -137,25 +137,29 @@ export default function JaccardGraphView({ selectedBookId, onSelectBook }) {
                     key={node.id}
                     transform={`translate(${pos.x}, ${pos.y})`}
                     onClick={() => setSelectedNode(node)}
-                    className="cursor-pointer transition-transform hover:scale-125"
+                    className="cursor-pointer group"
                   >
+                    {/* Anneau extérieur fluide et stable (halo de sélection / survol) */}
                     <circle
-                      r={radius + 3}
-                      fill={isSelected ? "#FFE4E6" : "transparent"}
-                      className="transition-all"
+                      r={isSelected ? radius + 7 : radius + 3}
+                      fill={isSelected ? "#FECDD3" : "transparent"}
+                      className="transition-all duration-200 group-hover:fill-rose-100"
                     />
+                    {/* Cercle du sommet */}
                     <circle
-                      r={radius}
+                      r={isSelected ? radius + 2 : radius}
                       fill={isSelected ? "#E11D48" : "#0B1D3A"}
-                      stroke="#FFFFFF"
-                      strokeWidth="2.5"
-                      className="shadow-md"
+                      stroke={isSelected ? "#BE123C" : "#FFFFFF"}
+                      strokeWidth={isSelected ? "3" : "2"}
+                      className="transition-all duration-200 group-hover:stroke-rose-400"
                     />
                     {/* Label court */}
                     <text
-                      y={radius + 13}
+                      y={radius + (isSelected ? 16 : 14)}
                       textAnchor="middle"
-                      className="text-[9px] font-sans font-medium fill-slate-700 pointer-events-none"
+                      className={`text-[9px] font-sans pointer-events-none transition-colors duration-200 ${
+                        isSelected ? "font-bold fill-rose-900" : "font-medium fill-slate-700 group-hover:fill-rose-700"
+                      }`}
                     >
                       {node.label.length > 15 ? node.label.slice(0, 13) + '..' : node.label}
                     </text>
@@ -255,6 +259,17 @@ export default function JaccardGraphView({ selectedBookId, onSelectBook }) {
                       })}
                   </div>
                 </div>
+
+                {/* Bouton pour ouvrir la liseuse */}
+                {onSelectBook && (
+                  <button
+                    onClick={() => onSelectBook(selectedNode.id)}
+                    className="w-full mt-4 py-2 px-4 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white rounded-xl text-xs font-semibold shadow-sm transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>📖</span>
+                    <span>Lire cet ouvrage complet</span>
+                  </button>
+                )}
 
               </div>
             ) : (
