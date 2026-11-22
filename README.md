@@ -1,5 +1,5 @@
 # 🏛️ DAAR Projet 2 — Moteur de Recherche de Bibliothèque Textuelle
-> **Sorbonne Université • Master 1 Informatique • Année 2025–2026**  
+> **Sorbonne Université • Master 2 Informatique • Année 2026–2027**  
 > **UE DAAR (Données, Algorithmes et Apprentissage)**  
 > **Responsable d'UE :** Binh-Minh BUI-XUAN  
 > **Binôme :** **Lina TIRECHE** & **Nouha KARA**
@@ -41,17 +41,17 @@ L'ensemble de l'écosystème est containerisé, hautement disponible et conçu p
 
 | Exigence du Sujet DAAR | Spécification Demandée | Réalisation dans notre Projet |
 | :--- | :--- | :---: |
-| **Volume de la bibliothèque** | $\ge 1\,664$ livres textuels | ✅ **1 665 livres textuels** (API Gutenberg) |
-| **Longueur par livre** | $\ge 10\,000$ mots par livre | ✅ **11 298 mots en moyenne** par livre (18,8M mots) |
-| **Recherche par mot-clé** | Table d'indexage inversé et KMP | ✅ **Index inversé TF-IDF ($O(1)$) & KMP ($O(N+M)$)** |
-| **Recherche avancée** | Expressions rationnelles (RegEx) | ✅ **Moteur RegEx plein texte et sur vocabulaire** |
-| **Graphe de similarité** | $J(A, B) = \frac{\vert A \cap B \vert}{\vert A \cup B \vert}$ | ✅ **Graphe de Jaccard (9 628 arêtes, seuil $\theta=0{,}12$)** |
-| **Classement implicite** | Centralités de graphe | ✅ **PageRank ($d=0{,}85$), Closeness & Betweenness** |
-| **Suggestions implicites** | Recommandations de voisins | ✅ **Suggestions automatiques des voisins dans le graphe** |
-| **Liseuse intégrée** | Visualisation plein texte | ✅ **Liseuse avec surlignage et contrôle de zoom** |
-| **Architecture conteneurisée** | Docker Compose 3-tiers | ✅ **3 conteneurs isolés sur réseau bridge dédié** |
-| **Kubernetes & ReplicaSets** | Déploiement résilient | ✅ **ReplicaSet (3 répliques backend, 2 frontend, Ingress)** |
-| **Pipeline CI/CD** | Automatisation des tests | ✅ **GitHub Actions & GitLab CI (4 jobs automatisés)** |
+| **Volume de la bibliothèque** | $\ge 1\,664$ livres textuels |  **1 665 livres textuels** (API Gutenberg) |
+| **Longueur par livre** | $\ge 10\,000$ mots par livre | **11 298 mots en moyenne** par livre (18,8M mots) |
+| **Recherche par mot-clé** | Table d'indexage inversé et KMP |  **Index inversé TF-IDF ($O(1)$) & KMP ($O(N+M)$)** |
+| **Recherche avancée** | Expressions rationnelles (RegEx) |  **Moteur RegEx plein texte et sur vocabulaire** |
+| **Graphe de similarité** | $J(A, B) = \frac{\vert A \cap B \vert}{\vert A \cup B \vert}$ | **Graphe de Jaccard (9 628 arêtes, seuil $\theta=0{,}12$)** |
+| **Classement implicite** | Centralités de graphe | **PageRank ($d=0{,}85$), Closeness & Betweenness** |
+| **Suggestions implicites** | Recommandations de voisins |  **Suggestions automatiques des voisins dans le graphe** |
+| **Liseuse intégrée** | Visualisation plein texte |  **Liseuse avec surlignage et contrôle de zoom** |
+| **Architecture conteneurisée** | Docker Compose 3-tiers |  **3 conteneurs isolés sur réseau bridge dédié** |
+| **Kubernetes & ReplicaSets** | Déploiement résilient |  **ReplicaSet (3 répliques backend, 2 frontend, Ingress)** |
+| **Pipeline CI/CD** | Automatisation des tests |  **GitHub Actions & GitLab CI (4 jobs automatisés)** |
 
 ---
 
@@ -113,14 +113,14 @@ L'application repose sur une architecture microservices 3-tiers distribuée :
 
 ---
 
-## 🚀 Démarrage Rapide en 1 Commande
+##  Démarrage Rapide en 1 Commande
 
 ### Prérequis
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) installé et lancé.
 
 ### Lancement
 ```bash
-# Cloner le dépôt (si ce n'est pas déjà fait)
+# Cloner le dépôt
 git clone https://github.com/linatireche/daar-projet2.git
 cd daar-projet2
 
@@ -185,4 +185,11 @@ Mesures expérimentales réelles obtenues sur notre corpus de 1 665 livres :
 
 ---
 
+<<<<<<< HEAD
 *Sorbonne Université • Master 1 Informatique • UE DAAR • Projet réalisé par Lina Tireche & Nouha Kara.*
+=======
+
+---
+
+*Sorbonne Université • Master 2 Informatique • UE DAAR • Projet réalisé par Lina Tireche & Nouha Kara.*
+>>>>>>> 371a6277cd880ebb131d5f9d63c9eb205770c117
