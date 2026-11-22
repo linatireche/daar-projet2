@@ -1,0 +1,777 @@
+%====================================================================
+% Rapport DAAR – Projet 2 : Moteur de recherche de bibliothèque
+% Université Sorbonne – M1 Informatique
+% Auteurs : Lina Tireche & Nouha Kara
+%====================================================================
+\documentclass[12pt,a4paper]{article}
+
+%---- Encodage & langue ----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+
+%---- Mise en page ----
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{setspace}
+\onehalfspacing
+
+%---- En-têtes / pieds de page ----
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small DAAR – Projet 2}
+\fancyhead[R]{\small Tireche \& Kara}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+%---- Maths (minimaliste) ----
+\usepackage{amsmath}
+
+%---- Tableaux ----
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+
+%---- Listings (code) ----
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  frame=single,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny,
+  stepnumber=1,
+  tabsize=4,
+  showstringspaces=false,
+  keywordstyle=\bfseries,
+  commentstyle=\itshape,
+}
+\lstdefinestyle{python}{language=Python}
+\lstdefinestyle{bash}{language=bash}
+\lstdefinestyle{yaml}{language=Python,
+  morekeywords={true,false,null,on,off,yes,no}}
+
+%---- TikZ ----
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+
+%---- Liens (noir, sans couleur) ----
+\usepackage[hidelinks]{hyperref}
+
+%---- Utilitaires ----
+\usepackage{graphicx}
+\usepackage{enumitem}
+
+%====================================================================
+\begin{document}
+
+%---- Page de titre ----
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\Large \textbf{Sorbonne Université}\\[0.3em]
+   \large UFR d'Informatique – Master 1 Informatique}\\[1cm]
+
+  \rule{\linewidth}{0.8pt}\\[0.6em]
+  {\LARGE \textbf{Projet 2 – Algorithmique des Réseaux et Données}}\\[0.4em]
+  {\large \textit{Moteur de recherche de bibliothèque textuelle}}\\[0.3em]
+  \rule{\linewidth}{0.8pt}\\[2cm]
+
+  {\large \textbf{Auteurs :}\\[0.4em]
+   Lina \textsc{Tireche}\\[0.2em]
+   Nouha \textsc{Kara}}\\[2cm]
+
+  {\large \textbf{Encadrant :}\\[0.4em]
+   Binh-Minh \textsc{Bui-Xuan}}\\[2cm]
+
+  {\large Année universitaire 2025–2026}\\[1cm]
+
+  \vfill
+  {\small Dépôt Git : \texttt{https://github.com/linatireche/daar-projet2}}
+\end{titlepage}
+
+%---- Résumé ----
+\begin{abstract}
+Ce rapport présente la réalisation complète d'un moteur de recherche textuelle
+appliqué à un corpus de livres issus du Projet Gutenberg.
+Nous avons construit une application web full-stack composée d'un backend
+Python (FastAPI), d'un frontend React et d'une base de données PostgreSQL.
+L'application permet de rechercher des livres par mots-clés, de recommander
+des ouvrages similaires et de classer les livres selon leur importance dans
+un graphe de proximité thématique. Le tout est containerisé avec Docker,
+déployable sur Kubernetes, et soumis à une intégration continue via GitHub Actions.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+%====================================================================
+\section{Introduction}
+%====================================================================
+
+L'objectif de ce projet était de concevoir et développer, de bout en bout,
+un moteur de recherche capable d'interroger une bibliothèque numérique de grande
+taille. Nous avons téléchargé automatiquement plus de 1\,600 livres depuis le
+Projet Gutenberg, puis nous les avons indexés et analysés à l'aide de plusieurs
+algorithmes étudiés en cours.
+
+Dès le départ, nous avons fait le choix de construire une véritable application
+web, et pas seulement une série de scripts. Cela signifiait concevoir une
+architecture cohérente, gérer une base de données, exposer une API REST,
+développer une interface utilisateur et enfin déployer le tout dans des conteneurs.
+Ce choix nous a demandé un effort supplémentaire, mais il nous a permis de
+comprendre comment les algorithmes s'intègrent dans un système réel.
+
+Le rapport est organisé de la façon suivante : nous commençons par décrire
+l'architecture générale du projet, puis nous détaillons chaque fonctionnalité
+implémentée — la recherche de texte, le graphe de similarité, l'analyse du graphe —
+et nous terminons par les aspects déploiement, tests et interface utilisateur.
+
+%====================================================================
+\section{Architecture du projet}
+%====================================================================
+
+\subsection{Vue d'ensemble}
+
+Le projet est structuré en trois grandes couches qui communiquent entre elles :
+le frontend, le backend et la base de données. Cette séparation nous a permis
+de travailler en parallèle sur les différentes parties et de remplacer ou
+modifier un composant sans tout casser.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  node distance=1.6cm and 2.8cm,
+  box/.style={rectangle, draw, thick, minimum width=3.2cm,
+              minimum height=1.1cm, align=center, font=\small},
+  arr/.style={-{Stealth}, thick}
+]
+  \node[box] (fe)  {Frontend\\React (port 80)};
+  \node[box, right=of fe] (be) {Backend\\FastAPI (port 8000)};
+  \node[box, right=of be] (db) {PostgreSQL\\(port 5432)};
+
+  \draw[arr] (fe) -- (be) node[midway, above, font=\scriptsize]{REST/HTTP};
+  \draw[arr] (be) -- (db) node[midway, above, font=\scriptsize]{SQL};
+  \draw[arr, dashed] (be.north) -- ++(0,1)
+        node[above, font=\scriptsize]{API Gutenberg};
+\end{tikzpicture}
+\caption{Architecture trois-tiers de l'application.}
+\label{fig:archi}
+\end{figure}
+
+\subsection{Le backend — FastAPI}
+
+Le backend est écrit en Python avec le framework FastAPI. C'est lui qui
+contient toute la logique métier : il reçoit les requêtes du frontend,
+exécute les algorithmes et renvoie les résultats au format JSON.
+
+Nous avons organisé le code backend en plusieurs modules bien séparés.
+Le dossier \texttt{algorithms/} contient les implémentations pures des
+algorithmes (KMP, index inversé, Jaccard, PageRank, etc.).
+Le dossier \texttt{api/} contient les routes HTTP.
+Le dossier \texttt{services/} fait le lien entre les deux : il appelle
+les algorithmes et les fonctions de base de données, et formate les réponses.
+Enfin, le dossier \texttt{models/} définit les structures de données
+(modèles SQLAlchemy et schémas Pydantic).
+
+\begin{lstlisting}[caption={Arborescence du backend.}, label=lst:tree]
+backend/
+|-- app/
+|   |-- algorithms/
+|   |   |-- kmp.py
+|   |   |-- inverted_index.py
+|   |   |-- jaccard_graph.py
+|   |   `-- centrality.py
+|   |-- api/
+|   |   |-- books.py
+|   |   |-- search.py
+|   |   `-- stats.py
+|   |-- models/
+|   |   `-- book.py
+|   |-- services/
+|   |   `-- book_service.py
+|   `-- database.py
+`-- tests/
+    `-- test_algorithms.py
+\end{lstlisting}
+
+\subsection{Le frontend — React}
+
+Le frontend est une application React développée en TypeScript avec Vite
+comme outil de build. Il communique avec le backend uniquement via des
+appels \texttt{fetch} vers l'API REST — il n'y a aucun état partagé côté serveur.
+L'application est servie par Nginx une fois compilée, ce qui la rend très légère
+et rapide.
+
+\subsection{La base de données — PostgreSQL}
+
+Nous utilisons PostgreSQL 16 pour stocker les livres, leur contenu, leurs
+métadonnées (auteur, titre, langue, nombre de mots) ainsi que les arêtes
+du graphe de similarité et les scores de centralité. Le choix de PostgreSQL
+nous a semblé naturel : c'est une base robuste, très bien supportée par
+SQLAlchemy (l'ORM Python que nous utilisons), et parfaitement intégrée
+dans l'écosystème Docker.
+
+Toute la communication entre le backend et la base de données passe par
+SQLAlchemy, ce qui nous évite d'écrire du SQL brut et rend le code plus
+lisible et plus maintenable.
+
+%====================================================================
+\section{Collecte et préparation des données}
+%====================================================================
+
+\subsection{Téléchargement des livres}
+
+Les livres proviennent du Projet Gutenberg, une bibliothèque numérique qui
+met à disposition des milliers d'œuvres du domaine public. Nous avons utilisé
+leur API pour télécharger les textes automatiquement au démarrage de l'application.
+
+Le service de collecte récupère les livres par batch, en gérant les limites
+de débit de l'API (rate limiting). Chaque livre est enregistré en base avec
+son identifiant Gutenberg, son titre, son auteur, sa langue et son contenu
+complet en texte brut.
+
+\subsection{Prétraitement du texte}
+
+Avant d'indexer les livres, nous appliquons quelques étapes de nettoyage :
+suppression des en-têtes et pieds de page standard de Gutenberg,
+normalisation des espaces et de la ponctuation, conversion en minuscules.
+Pour la construction du graphe de similarité, nous filtrons également les
+mots courts (moins de 4 caractères) et les mots très fréquents qui ne sont
+pas discriminants (stopwords).
+
+\subsection{Résultats de la collecte}
+
+Au final, notre corpus contient \textbf{1\,665 livres}, pour un total de
+près de \textbf{18,8 millions de mots}. La longueur moyenne d'un livre est
+d'environ 11\,300 mots. Ces chiffres sont affichés en temps réel dans le
+tableau de bord de l'application.
+
+%====================================================================
+\section{Recherche dans les textes}
+%====================================================================
+
+\subsection{L'algorithme de Knuth-Morris-Pratt (KMP)}
+
+\subsubsection{Ce que fait KMP}
+
+Lorsqu'un utilisateur saisit un mot ou une expression dans la barre de
+recherche et choisit le mode « recherche exacte », notre application utilise
+l'algorithme KMP pour parcourir le contenu de chaque livre et trouver toutes
+les occurrences de ce motif.
+
+L'intérêt de KMP par rapport à une recherche naïve est qu'il ne reprend jamais
+depuis le début en cas d'échec partiel. Il mémorise, grâce à une table de
+préfixes calculée à l'avance, jusqu'où il peut \og sauter\fg{} dans le motif
+sans rater une occurrence. Concrètement, cela lui permet de parcourir le texte
+en un seul passage, sans jamais reculer.
+
+\subsubsection{Comment nous l'avons implémenté}
+
+Nous avons implémenté KMP from scratch en Python dans le fichier
+\texttt{algorithms/kmp.py}. La fonction prend en entrée le texte d'un livre
+et le motif recherché, et renvoie la liste des positions (indices de caractères)
+où le motif apparaît.
+
+\begin{lstlisting}[style=python, caption={Implémentation de KMP.}, label=lst:kmp]
+def build_failure(pattern: str) -> list[int]:
+    """Construit la table de prefixes (table pi) du motif."""
+    m = len(pattern)
+    pi = [0] * m
+    k = 0
+    for i in range(1, m):
+        while k > 0 and pattern[k] != pattern[i]:
+            k = pi[k - 1]
+        if pattern[k] == pattern[i]:
+            k += 1
+        pi[i] = k
+    return pi
+
+def kmp_search(text: str, pattern: str) -> list[int]:
+    """Renvoie les positions de toutes les occurrences de pattern dans text."""
+    if not pattern:
+        return []
+    pi = build_failure(pattern)
+    matches, q = [], 0
+    for i, c in enumerate(text):
+        while q > 0 and pattern[q] != c:
+            q = pi[q - 1]
+        if pattern[q] == c:
+            q += 1
+        if q == len(pattern):
+            matches.append(i - len(pattern) + 1)
+            q = pi[q - 1]
+    return matches
+\end{lstlisting}
+
+En plus des positions brutes, le service associé extrait un extrait de texte
+(snippet) autour de chaque occurrence, que l'interface affiche pour donner
+du contexte à l'utilisateur.
+
+\subsection{L'index inversé avec TF-IDF}
+
+\subsubsection{Ce que fait l'index inversé}
+
+La recherche par KMP est précise mais lente sur un grand corpus : elle doit
+lire chaque livre en entier pour chaque requête. L'index inversé résout ce
+problème en préparant à l'avance une structure qui associe chaque mot à la
+liste des livres qui le contiennent.
+
+Quand un utilisateur cherche \og adventure\fg{}, au lieu de lire 1\,665 livres,
+on consulte directement l'entrée de l'index pour ce mot, et on obtient
+instantanément la liste des livres concernés. C'est le même principe que
+l'index à la fin d'un manuel scolaire.
+
+Nous avons enrichi cet index avec un score TF-IDF, qui mesure à quel point
+un mot est important dans un livre donné. Un mot très fréquent dans un livre
+mais rare dans le reste du corpus aura un score élevé — c'est un bon indicateur
+que le livre traite vraiment de ce sujet.
+
+\subsubsection{Comment nous l'avons implémenté}
+
+L'index est construit une seule fois au démarrage du serveur, en parcourant
+tous les livres. Il est ensuite conservé en mémoire sous forme d'un dictionnaire
+Python. Cette construction prend quelques secondes, mais ensuite chaque
+recherche est quasiment instantanée.
+
+\subsubsection{Comparaison des performances}
+
+Nous avons mesuré les temps de réponse moyens sur notre corpus :
+
+\begin{table}[h]
+\centering
+\caption{Comparaison des méthodes de recherche.}
+\label{tab:bench}
+\begin{tabular}{lrp{6cm}}
+\toprule
+\textbf{Méthode} & \textbf{Temps moyen} & \textbf{Avantage principal} \\
+\midrule
+Index inversé (TF-IDF) & 6 ms  & Résultats triés par pertinence, très rapide \\
+Expressions régulières  & 8 ms  & Syntaxe flexible (wildcards, etc.) \\
+KMP                     & 26 ms & Recherche exacte, toutes occurrences garanties \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+L'index inversé est 4 fois plus rapide que KMP car il ne lit jamais les
+livres lors de la requête. KMP est plus lent mais il est le seul à trouver
+précisément toutes les occurrences d'une expression dans le texte brut.
+
+%====================================================================
+\section{Graphe de similarité — Jaccard}
+%====================================================================
+
+\subsection{L'idée générale}
+
+Une des fonctionnalités les plus intéressantes de l'application est la
+recommandation : quand un utilisateur consulte un livre, l'application lui
+propose d'autres livres similaires. Pour cela, nous avons construit un graphe
+dans lequel chaque nœud est un livre et chaque arête relie deux livres
+thématiquement proches.
+
+La mesure de proximité que nous utilisons est la similarité de Jaccard.
+Elle consiste à comparer les vocabulaires de deux livres : deux livres qui
+partagent beaucoup de mots en commun (relativement à l'union de leurs
+vocabulaires) sont considérés comme proches.
+
+\subsection{Comment nous avons construit le graphe}
+
+Pour chaque livre, nous commençons par extraire son vocabulaire significatif :
+on tokenise le texte (on découpe en mots), on filtre les mots trop courts
+et les stopwords, et on garde l'ensemble des mots distincts.
+
+Ensuite, pour chaque paire de livres, on calcule leur similarité de Jaccard.
+Si cette similarité dépasse un seuil de 0,12 (que nous avons fixé après
+expérimentation), on ajoute une arête entre ces deux livres dans le graphe.
+Pour éviter d'avoir des graphes trop denses, nous limitons à 6 le nombre de
+voisins par livre (on garde seulement les 6 livres les plus similaires).
+
+Cette étape de construction est la plus coûteuse en temps de calcul, car
+elle compare toutes les paires possibles. Avec 1\,665 livres, cela représente
+plus d'un million de comparaisons. C'est pourquoi nous l'exécutons une seule
+fois au démarrage et nous persistons les résultats en base de données.
+
+\subsection{Résultats}
+
+Le graphe final contient \textbf{9\,628 arêtes}. Ces connexions reflètent
+bien les proximités thématiques : par exemple, les romans d'aventure sont
+reliés entre eux, les œuvres scientifiques se regroupent, et les textes
+philosophiques forment leur propre cluster.
+
+\begin{lstlisting}[style=python, caption={Calcul de la similarité de Jaccard.}, label=lst:jaccard]
+def jaccard(set_a: set, set_b: set) -> float:
+    """Retourne la similarite de Jaccard entre deux ensembles de mots."""
+    if not set_a and not set_b:
+        return 1.0
+    intersection = len(set_a & set_b)
+    union = len(set_a | set_b)
+    return intersection / union if union else 0.0
+\end{lstlisting}
+
+%====================================================================
+\section{Analyse du graphe — Centralités}
+%====================================================================
+
+Une fois le graphe construit, nous l'analysons pour calculer l'importance
+relative de chaque livre. Nous avons implémenté trois mesures de centralité
+classiques, chacune donnant une lecture différente du graphe.
+
+\subsection{PageRank}
+
+Le PageRank est l'algorithme qu'utilisait Google à l'origine pour classer
+les pages web. Appliqué à notre graphe de livres, il mesure l'importance
+d'un livre en tenant compte non seulement du nombre de ses voisins, mais
+aussi de l'importance de ces voisins.
+
+Concrètement, un livre a un PageRank élevé si beaucoup de livres importants
+lui sont reliés. C'est une mesure récursive : on part d'une distribution
+uniforme de scores, et on les propage de proche en proche jusqu'à convergence.
+En pratique, sur notre graphe, l'algorithme converge en moins de 35 itérations.
+
+Nous avons implémenté PageRank from scratch en Python, avec un facteur
+d'amortissement de 0,85 (valeur standard) et un critère d'arrêt basé sur
+la variation des scores entre deux itérations consécutives.
+
+Les livres avec le PageRank le plus élevé sont en quelque sorte les
+\og classiques\fg{} du corpus : des œuvres très centrales, recommandées
+par de nombreux autres livres eux-mêmes importants.
+
+\subsection{Closeness centrality}
+
+La closeness mesure à quel point un livre est \og proche\fg{} de tous les autres
+dans le graphe, en termes de nombre d'arêtes à traverser. Un livre avec une
+closeness élevée peut \og atteindre\fg{} n'importe quel autre livre en peu d'étapes.
+
+Nous avons implémenté ce calcul par des parcours en largeur (BFS) depuis
+chaque nœud du graphe. Comme notre graphe peut avoir plusieurs composantes
+connexes (des livres sans voisins), nous utilisons la correction de
+Wasserman-Faust qui ramène les scores à une échelle comparable même pour
+les nœuds isolés.
+
+Les livres à forte closeness sont ceux qui ont des thèmes polyvalents,
+qui leur permettent d'être reliés à des ouvrages de genres variés.
+
+\subsection{Betweenness centrality}
+
+La betweenness mesure à quel point un livre sert de \og pont\fg{} dans le graphe.
+Plus précisément, elle compte la proportion de plus courts chemins entre
+toutes les paires de livres qui passent par ce livre.
+
+Un livre avec une betweenness élevée joue un rôle structurant dans le graphe :
+sans lui, certains clusters de livres se trouveraient déconnectés les uns des
+autres. Typiquement, ce sont des livres qui traitent de plusieurs thèmes à la fois.
+
+Nous avons utilisé l'algorithme de Brandes pour calculer la betweenness de
+tous les nœuds en un seul passage, ce qui est bien plus efficace que de
+calculer naïvement les plus courts chemins entre toutes les paires.
+
+\subsection{Exposition via l'API}
+
+Les trois scores sont calculés au démarrage du serveur et stockés en base
+de données avec le livre correspondant. Ils sont exposés via la route
+\texttt{GET /api/books/ranked?metric=pagerank} (ou \texttt{closeness},
+ou \texttt{betweenness}), que le frontend utilise pour afficher la vue
+\og Classement\fg{}.
+
+%====================================================================
+\section{Déploiement}
+%====================================================================
+
+\subsection{Containerisation avec Docker}
+
+L'une de nos contraintes était que l'application doit pouvoir tourner
+n'importe où, sans installation manuelle de dépendances. Nous avons donc
+containerisé les trois composants (frontend, backend, base de données)
+avec Docker.
+
+Chaque service est décrit dans un fichier \texttt{Dockerfile} :
+\begin{itemize}
+  \item Le Dockerfile du backend part d'une image Python 3.11 légère,
+        installe les dépendances listées dans \texttt{requirements.txt} et
+        lance le serveur Uvicorn.
+  \item Le Dockerfile du frontend utilise une construction multi-étape :
+        d'abord Node 20 pour compiler l'application React avec Vite,
+        ensuite Nginx Alpine pour servir les fichiers statiques générés.
+        L'image finale pèse à peine quelques mégaoctets.
+  \item La base de données utilise directement l'image officielle
+        PostgreSQL 16, sans personnalisation.
+\end{itemize}
+
+Le fichier \texttt{docker-compose.yml} orchestre les trois services,
+définit les variables d'environnement, les ports exposés et les dépendances
+de démarrage (le backend attend que la base soit prête avant de lancer).
+
+\begin{lstlisting}[style=yaml, caption={Extrait de docker-compose.yml.}, label=lst:compose]
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: daar_library
+      POSTGRES_USER: daar_user
+      POSTGRES_PASSWORD: daar_password
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U daar_user"]
+      interval: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: .env
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  pg_data:
+\end{lstlisting}
+
+Avec cette configuration, lancer toute l'application se résume à une seule
+commande : \texttt{docker compose up --build}.
+
+\subsection{Déploiement sur Kubernetes}
+
+En plus de Docker Compose (pour le développement local), nous avons préparé
+des manifests Kubernetes pour un déploiement en production.
+
+Le dossier \texttt{k8s/} contient les fichiers YAML suivants :
+\begin{itemize}
+  \item Un \texttt{Deployment} et un \texttt{Service} pour chacun des trois
+        composants (frontend, backend, PostgreSQL).
+  \item Un \texttt{PersistentVolumeClaim} pour la persistance des données
+        PostgreSQL, même si le pod redémarre.
+  \item Un \texttt{Ingress} NGINX qui route le trafic HTTP entrant : les
+        requêtes vers \texttt{/api/} sont redirigées vers le backend,
+        tout le reste va vers le frontend.
+  \item Un \texttt{ConfigMap} pour les variables de configuration et un
+        \texttt{Secret} pour les informations sensibles (mot de passe de
+        la base de données).
+\end{itemize}
+
+Nous avons également écrit un script \texttt{k8s-deploy.sh} qui automatise
+l'application de tous ces manifests dans le bon ordre.
+
+\subsection{Pipeline CI/CD — GitHub Actions}
+
+Chaque fois que nous poussons du code sur la branche principale ou que nous
+ouvrons une pull request, un workflow GitHub Actions se déclenche
+automatiquement. Ce pipeline réalise les étapes suivantes :
+
+\begin{enumerate}
+  \item Il configure un environnement Python 3.11 et installe toutes les
+        dépendances du backend.
+  \item Il démarre une instance PostgreSQL éphémère (fournie comme service
+        par GitHub Actions) pour que les tests puissent s'appuyer sur une
+        vraie base de données.
+  \item Il exécute la suite complète de tests pytest.
+  \item Il vérifie que le frontend se compile sans erreur avec
+        \texttt{npm run build}.
+\end{enumerate}
+
+Si l'une de ces étapes échoue, le push est signalé comme défaillant sur GitHub
+et nous sommes immédiatement alertées. Cela nous a permis de détecter plusieurs
+régressions pendant le développement.
+
+%====================================================================
+\section{Interface utilisateur}
+%====================================================================
+
+L'interface React est organisée autour de quatre vues principales, accessibles
+depuis une barre de navigation commune.
+
+\subsection{La recherche}
+
+C'est la page d'accueil de l'application. L'utilisateur saisit un ou plusieurs
+mots dans une barre de recherche et choisit la méthode souhaitée parmi trois
+options : index inversé (TF-IDF), KMP ou expressions régulières.
+
+Les résultats s'affichent sous forme de cartes, chacune montrant le titre,
+l'auteur, un extrait du texte autour de la correspondance, et le score de
+pertinence (pour la recherche par index). Un clic sur une carte ouvre la vue
+détail du livre.
+
+\subsection{Le détail d'un livre}
+
+Cette page affiche les métadonnées complètes du livre (titre, auteur, langue,
+nombre de mots, date de publication) ainsi que le début du texte.
+
+En bas de page, une section \textit{Livres similaires} présente jusqu'à six
+recommandations calculées par la similarité de Jaccard. Chaque recommandation
+affiche le score de similarité et permet de naviguer vers le livre suggéré.
+
+\subsection{Le classement}
+
+Cette vue affiche la liste de tous les livres triés par l'une des trois mesures
+de centralité, sélectionnable via un menu déroulant : PageRank, closeness ou
+betweenness. Le score associé est affiché pour chaque livre.
+
+\subsection{Les statistiques}
+
+Le tableau de bord affiche des indicateurs globaux sur le corpus et le graphe :
+nombre total de livres, nombre total de mots, taille du vocabulaire, nombre
+d'arêtes dans le graphe de Jaccard, densité du graphe, et les dix livres les
+mieux classés par PageRank. Ces données sont utiles pour vérifier que l'indexation
+s'est bien déroulée.
+
+%====================================================================
+\section{Tests}
+%====================================================================
+
+Nous avons mis en place une suite de 7 tests automatisés avec \texttt{pytest}.
+Ces tests couvrent à la fois les algorithmes purs et les routes de l'API.
+
+\begin{table}[h]
+\centering
+\caption{Suite de tests automatisés.}
+\label{tab:tests}
+\begin{tabularx}{\linewidth}{lXl}
+\toprule
+\textbf{Test} & \textbf{Ce qui est vérifié} & \textbf{Résultat} \\
+\midrule
+\texttt{test\_kmp\_found}
+  & KMP trouve toutes les occurrences d'un motif présent dans le texte
+  & \checkmark \\[4pt]
+\texttt{test\_kmp\_not\_found}
+  & KMP renvoie une liste vide si le motif est absent
+  & \checkmark \\[4pt]
+\texttt{test\_index\_build}
+  & L'index inversé indexe correctement les termes d'un mini-corpus
+  & \checkmark \\[4pt]
+\texttt{test\_index\_query}
+  & Une requête TF-IDF renvoie le bon document en tête
+  & \checkmark \\[4pt]
+\texttt{test\_jaccard}
+  & La similarité entre deux ensembles connus est correcte
+  & \checkmark \\[4pt]
+\texttt{test\_pagerank}
+  & La somme des scores PageRank est bien égale à 1 (conservation)
+  & \checkmark \\[4pt]
+\texttt{test\_api\_books}
+  & La route \texttt{GET /api/books} retourne un code 200
+  & \checkmark \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Les tests unitaires (KMP, index, Jaccard, PageRank) n'ont pas besoin de base
+de données et s'exécutent très rapidement. Le test d'intégration
+(\texttt{test\_api\_books}) utilise une base de données de test éphémère,
+automatiquement créée et détruite par le fixture pytest correspondant.
+
+Tous les tests passent en continu depuis la mise en place du pipeline CI/CD.
+
+%====================================================================
+\section{Difficultés rencontrées et solutions}
+%====================================================================
+
+Le développement de ce projet ne s'est pas fait sans obstacles. Voici les
+principaux problèmes que nous avons rencontrés et comment nous les avons résolus.
+
+\textbf{La connexion à la base de données dans Docker.}
+Au début, le backend utilisait \texttt{localhost} comme adresse de la base,
+ce qui fonctionnait en local mais pas dans Docker Compose, où la base est
+accessible via son nom de service (\texttt{db}). Nous avons centralisé la
+configuration dans un fichier \texttt{.env} et harmonisé toutes les références
+à l'URL de connexion.
+
+\textbf{L'initialisation de la session SQLAlchemy.}
+Nous avons eu un problème avec l'initialisation de la session SQLAlchemy :
+la variable \texttt{SessionLocal} était parfois \texttt{None} lors du premier
+appel. Nous avons résolu ce problème en refactorisant la gestion de l'état de
+l'application avec un singleton \texttt{AppState}, initialisé une seule fois
+au démarrage du serveur.
+
+\textbf{La migration vers Pydantic v2.}
+La version 2 de Pydantic (utilisée par les versions récentes de FastAPI) a
+introduit des changements incompatibles avec v1. En particulier, la méthode
+\texttt{from\_orm()} a été remplacée par \texttt{model\_validate()}.
+Nous avons mis à jour tous les appels correspondants dans \texttt{book\_service.py}
+et \texttt{stats.py}.
+
+\textbf{La performance de la construction du graphe.}
+Avec 1\,665 livres, la comparaison de toutes les paires prend un temps non
+négligeable. Nous avons optimisé en pré-calculant les ensembles de mots
+une seule fois par livre et en parallélisant les comparaisons. Les résultats
+sont ensuite persistés en base pour ne pas refaire le calcul à chaque démarrage.
+
+%====================================================================
+\section{Conclusion}
+%====================================================================
+
+Ce projet nous a donné l'opportunité de mettre en pratique, dans un contexte
+réaliste, plusieurs algorithmes fondamentaux vus en cours : la recherche de
+chaînes avec KMP, l'indexation avec TF-IDF, la mesure de similarité avec
+Jaccard, et l'analyse de graphes avec PageRank, closeness et betweenness.
+
+Au-delà des algorithmes eux-mêmes, nous avons dû concevoir une architecture
+logicielle complète, gérer une base de données, construire une API REST,
+développer une interface utilisateur, et déployer l'ensemble dans des conteneurs.
+Ce côté \og ingénierie logicielle\fg{} était aussi enrichissant que le côté algorithmique.
+
+Les résultats sont concluants : l'application tourne de manière stable,
+les recherches répondent en quelques millisecondes, les recommandations sont
+cohérentes, et le pipeline CI/CD garantit que les tests passent à chaque
+modification du code.
+
+Des améliorations resteraient envisageables : utiliser MinHash pour accélérer
+le calcul de Jaccard à grande échelle, ajouter un moteur de suggestion
+orthographique basé sur la distance de Levenshtein, ou mettre en cache les
+recherches fréquentes avec Redis.
+
+%====================================================================
+\begin{thebibliography}{9}
+
+\bibitem{kmp1977}
+  D.~E. Knuth, J.~H. Morris et V.~R. Pratt,
+  \textit{Fast Pattern Matching in Strings},
+  SIAM Journal on Computing, vol.~6, n\textsuperscript{o}~2,
+  pp.~323--350, 1977.
+
+\bibitem{jaccard1912}
+  P.~Jaccard,
+  \textit{The Distribution of the Flora in the Alpine Zone},
+  New Phytologist, vol.~11, n\textsuperscript{o}~2, pp.~37--50, 1912.
+
+\bibitem{pagerank1998}
+  L.~Page, S.~Brin, R.~Motwani et T.~Winograd,
+  \textit{The PageRank Citation Ranking: Bringing Order to the Web},
+  Rapport technique, Stanford University, 1998.
+
+\bibitem{brandes2001}
+  U.~Brandes,
+  \textit{A Faster Algorithm for Betweenness Centrality},
+  Journal of Mathematical Sociology, vol.~25, n\textsuperscript{o}~2,
+  pp.~163--177, 2001.
+
+\bibitem{tfidf}
+  G.~Salton et C.~Buckley,
+  \textit{Term-weighting Approaches in Automatic Text Retrieval},
+  Information Processing \& Management, vol.~24, n\textsuperscript{o}~5,
+  pp.~513--523, 1988.
+
+\bibitem{gutenberg}
+  Projet Gutenberg,
+  \textit{Free eBooks},
+  \url{https://www.gutenberg.org}, consulté en novembre 2025.
+
+\bibitem{fastapi}
+  S.~Ramírez,
+  \textit{FastAPI Documentation},
+  \url{https://fastapi.tiangolo.com}, consulté en novembre 2025.
+
+\end{thebibliography}
+
+\end{document}
