@@ -3,7 +3,7 @@
 > **UE DAAR (Données, Algorithmes et Apprentissage)**  
 > **Responsable d'UE :** Binh-Minh BUI-XUAN  
 > **Binôme :** **Lina TIRECHE** & **Nouha KARA**
-
+> **lien: http://13.63.106.42/**
 ---
 
 ![CI/CD Pipeline](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-brightgreen?logo=github-actions)
@@ -186,10 +186,7 @@ Mesures expérimentales réelles obtenues sur notre corpus de 1 665 livres :
 ---
 
 <<<<<<< HEAD
-*Sorbonne Université • Master 1 Informatique • UE DAAR • Projet réalisé par Lina Tireche & Nouha Kara.*
+*Sorbonne Université • Master 2 Informatique • UE DAAR • Projet réalisé par Lina Tireche & Nouha Kara.*
 =======
 
----
 
-*Sorbonne Université • Master 2 Informatique • UE DAAR • Projet réalisé par Lina Tireche & Nouha Kara.*
->>>>>>> 371a6277cd880ebb131d5f9d63c9eb205770c117
